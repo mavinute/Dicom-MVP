@@ -1,15 +1,36 @@
-import * as cornerstone from "cornerstone-core";
-import * as cornerstoneTools from "cornerstone-tools";
-import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
+"use client";
 
-export function initCornerstone() {
+let cornerstone: any;
+let cornerstoneTools: any;
+let cornerstoneWADOImageLoader: any;
+
+export async function initCornerstone() {
+  if (typeof window === "undefined") return; // evita execução no servidor
+
+  // Evita reimportar se já estiver inicializado
+  if (!cornerstone || !cornerstoneTools || !cornerstoneWADOImageLoader) {
+    cornerstone = await import("cornerstone-core");
+    cornerstoneTools = await import("cornerstone-tools");
+    cornerstoneWADOImageLoader = await import("cornerstone-wado-image-loader");
+  }
+
+  // Vincula as dependências entre os módulos
   cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
   cornerstoneTools.external.cornerstone = cornerstone;
 
-  cornerstoneWADOImageLoader.webWorkerManager.initialize({
-    maxWebWorkers: navigator.hardwareConcurrency || 4,
-    startWebWorkersOnDemand: true,
+  // Inicializa WebWorkers de forma segura
+  if (cornerstoneWADOImageLoader.webWorkerManager) {
+    cornerstoneWADOImageLoader.webWorkerManager.initialize({
+      maxWebWorkers: navigator.hardwareConcurrency || 4,
+      startWebWorkersOnDemand: true,
+    });
+  }
+
+  // Inicializa o módulo de ferramentas
+  cornerstoneTools.init({
+    showSVGCursors: true,
   });
 
-  cornerstoneTools.init();
+  // Retorna instâncias (opcional)
+  return { cornerstone, cornerstoneTools, cornerstoneWADOImageLoader };
 }
